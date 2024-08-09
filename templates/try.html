@@ -1,0 +1,96 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chatbot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='try.css') }}" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    />
+  </head>
+  <body>
+    <div class="chatbot">
+      <header>
+        <h2>Chatbot</h2>
+      </header>
+      <ul class="chatbox" id="chatbox-messages">
+        <li class="chat incoming">
+          <p>Hi there 👋 <br />How can I help you today?</p>
+        </li>
+      </ul>
+      <div class="chat-input">
+        <textarea
+          id="message"
+          placeholder="Enter a message..."
+          oninput="resetResponse()"
+        ></textarea>
+        <span id="send-btn" class="material-symbols-outlined">send</span>
+      </div>
+      <div class="suggestions" id="suggestions" style="display: none">
+        <h3>Suggestions:</h3>
+        <ul id="suggestions-list"></ul>
+      </div>
+    </div>
+
+    
+    <script>
+      function scrollToBottom() {
+        const chatbox = document.getElementById("chatbox-messages");
+        chatbox.scrollTop = chatbox.scrollHeight;
+      }
+
+      document.getElementById("send-btn").onclick = async () => {
+        const message = document.getElementById("message").value;
+        if (message.trim() === "") return;
+
+        // Display the user's message
+        document.getElementById("chatbox-messages").innerHTML +=
+          '<li class="chat outgoing"><p>' + message + "</p></li>";
+        document.getElementById("message").value = "";
+
+        // Send the message to the server
+        const response = await fetch("/chatbot", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: message }),
+        });
+
+        const data = await response.json();
+
+        // Display the bot's response
+        document.getElementById("chatbox-messages").innerHTML +=
+          '<li class="chat incoming"><p>' + data.response + "</p></li>";
+
+        // Display suggestions if available
+        if (data.suggestions && data.suggestions.length > 0) {
+          const suggestionsList = document.getElementById("suggestions-list");
+          suggestionsList.innerHTML = ""; // Clear previous suggestions
+
+          data.suggestions.forEach((suggestion) => {
+            const li = document.createElement("li");
+            li.textContent = suggestion;
+            li.onclick = () => {
+              document.getElementById("message").value = suggestion;
+              document.getElementById("suggestions").style.display = "none"; // Hide suggestions after selecting
+            };
+            suggestionsList.appendChild(li);
+          });
+
+          document.getElementById("suggestions").style.display = "block"; // Show suggestions
+        } else {
+          document.getElementById("suggestions").style.display = "none"; // Hide suggestions if none
+        }
+
+        scrollToBottom(); // Ensure the chatbox scrolls to the latest message
+      };
+
+      function resetResponse() {
+        // This function can be used to reset or clear any previous response related messages if needed
+        document.getElementById("suggestions").style.display = "none"; // Hide suggestions when user starts typing
+      }
+    </script>
+  </body>
+</html>
